@@ -8,6 +8,9 @@
 (add-to-list 'load-path "~/.emacs.d/lisp/jinja2-mode/")
 (autoload 'jinja2-mode "jinja2-mode")
 
+(add-to-list 'load-path "~/.emacs.d/lisp/change-inner.el")
+(autoload 'change-inner "change-inner.el")
+
 (add-to-list 'load-path "~/.emacs.d/lisp/expand-region.el/")
 (require 'expand-region)
 
@@ -211,6 +214,7 @@ current line and then calls f"
 (define-key my-keys-minor-mode-map "\M-b" 'backward-kill-word-or-region)
 (define-key my-keys-minor-mode-map "\C-b" 'backward-kill-word-or-region)
 (define-key my-keys-minor-mode-map "\C-f" 'er/expand-region)
+(define-key my-keys-minor-mode-map "\M-w" 'change-inner)
 (define-key my-keys-minor-mode-map "\M-f" 'er/contract-region)
 (define-key my-keys-minor-mode-map "\C-o" 'my-open-line)
 (define-key my-keys-minor-mode-map "\C-v" 'yank)
