@@ -24,9 +24,10 @@
 (require 'auto-complete-config)
 (add-to-list 'ac-dictionary-directories "~/.emacs.d/lisp/auto-complete.el//ac-dict")
 (ac-config-default)
-;; (setq ac-auto-start 5)
+(setq ac-auto-start 4)
 (setq ac-dwim t)
 (setq ac-use-menu-map t)
+(setq ac-auto-show-menu 0.8)
 
 ;; set bindings to control the completion menu
 (define-key ac-menu-map "\C-t" 'ac-next)
@@ -43,6 +44,8 @@
 (autoload 'jedi:setup "jedi" nil t)
 (setq jedi:setup-keys t)
 (setq jedi:complete-on-dot t)
+(setq jedi:tooltip-method nil)
+(setq jedi:get-in-function-call-delay 0)
 
 ;; (require 'nose)
 

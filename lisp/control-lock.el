@@ -128,7 +128,11 @@ it just returns the key."
 (control-lock-map-key "n" "M-n" "n")
 (control-lock-map-key "h" "M-h" "h")
 (control-lock-map-key "d" "<backspace>" "d")
-(control-lock-map-key "c" "C-p" "c")
+;; (control-lock-map-key "c" "C-p" "c")
+(control-lock-map-key "c" "M-c" "c")
+(control-lock-map-key "t" "M-t" "t")
+
+
 
 ; Uncomment to remap <return>.  Useful for Proof General.
 ;(control-lock-map-key "\\r" "C-<return>" "return")
