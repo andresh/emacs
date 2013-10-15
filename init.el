@@ -1,4 +1,6 @@
 
+;; R support requires ESS package
+
 ;; ------> library imports and configuration
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 (require 'autopair)
@@ -155,7 +157,8 @@ current line and then calls f"
   (interactive)
   (back-to-indentation)
   (if (member (thing-at-point 'word)
-              '("def" "for" "while" "class" "if" "try" "with" "else" "elif"))
+              '("def" "for" "while" "class" "if" "try"
+                "with" "else" "elif" "try" "except" "finally"))
     (progn
       (end-of-line)
       (when (not (looking-back ":" 1)) (insert ":"))
@@ -290,6 +293,26 @@ current line and then calls f"
 
 (add-hook 'python-mode-hook 'jedi:setup)
 
+;; settings for R
+(setq ess-ask-for-ess-directory nil)
+(setq comint-scroll-to-bottom-on-input t)
+(setq comint-scroll-to-bottom-on-output t)
+(setq comint-move-point-for-output t)
+
+(add-hook 'ess-mode-hook
+          '(lambda ()
+             (define-key ess-mode-map (kbd "<f12>")
+               'ess-eval-region-or-buffer)))
+
+(defun ess-eval-region-or-buffer ()
+  (interactive)
+  (let (w)
+    (setq w (get-buffer-window))
+    (if (and transient-mark-mode mark-active)
+        (call-interactively 'ess-eval-region-and-go)
+      (call-interactively 'ess-eval-buffer-and-go))
+    (select-window w)))
+
 
 ;; ------> files/folders to open at startup
 (find-file "~/.emacs.d/init.el")
@@ -300,6 +323,8 @@ current line and then calls f"
 ;; disable back-ups
 ;; (setq make-backup-files nil)
 
+;; (setq-default line-spacing 2)
+
 (put 'dired-find-alternate-file 'disabled nil)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 
@@ -308,7 +333,7 @@ current line and then calls f"
 (global-visual-line-mode 1) ;;wrap long lines at word boundaries
 (blink-cursor-mode 0) ;;disable cursor blinking
 ;; (setq blink-matching-paren t)
-;; (setq blink-matching-delay 0.5)
+(setq blink-matching-delay 0.5)
 
 ;; indentation
 (setq-default indent-tabs-mode nil) ; always replace tabs with spaces
@@ -335,8 +360,8 @@ current line and then calls f"
 
 ;;nicer buffer switching
 (iswitchb-mode t)
-(add-to-list 'iswitchb-buffer-ignore "^\\*scratch")
-(add-to-list 'iswitchb-buffer-ignore "^\\*Messages")
+;; (add-to-list 'iswitchb-buffer-ignore "^\\*scratch")
+;; (add-to-list 'iswitchb-buffer-ignore "^\\*Messages")
 
 (require 'edmacro)
 (defun iswitchb-local-keys ()
@@ -400,7 +425,7 @@ current line and then calls f"
   ;; If you edit it by hand, you could mess it up, so be careful.
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 102 :width normal :foundry "unknown" :family "DejaVu Sans Mono"))))
+ '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 105 :width normal :foundry "unknown" :family "DejaVu Sans Mono"))))
  '(font-lock-comment-face ((((class color) (min-colors 88) (background light)) (:foreground "dark green" :slant italic))))
  '(font-lock-type-face ((((class color) (min-colors 88) (background light)) (:foreground "blue"))))
  '(font-lock-variable-name-face ((((class color) (min-colors 88) (background light)) (:foreground "darkgoldenrod"))))
