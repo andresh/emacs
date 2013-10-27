@@ -16,6 +16,3 @@
 [submodule "lisp/jinja2-mode"]
 	path = lisp/jinja2-mode
 	url = git@github.com:paradoxxxzero/jinja2-mode.git
-[submodule "lisp/change-inner.el"]
-	path = lisp/change-inner.el
-	url = git@github.com:magnars/change-inner.el.git

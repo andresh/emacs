@@ -10,8 +10,8 @@
 (add-to-list 'load-path "~/.emacs.d/lisp/jinja2-mode/")
 (autoload 'jinja2-mode "jinja2-mode")
 
-(add-to-list 'load-path "~/.emacs.d/lisp/change-inner.el")
-(autoload 'change-inner "change-inner.el")
+;; (add-to-list 'load-path "~/.emacs.d/lisp/change-inner.el/")
+;; (autoload 'change-inner "change-inner.el")
 
 (add-to-list 'load-path "~/.emacs.d/lisp/expand-region.el/")
 (require 'expand-region)
@@ -188,6 +188,7 @@ current line and then calls f"
 ;; ------> keybindings for Dvorak layout
 (defvar my-keys-minor-mode-map (make-keymap) "my-keys-minor-mode keymap.")
 (defvar my-comint-minor-mode-map (make-keymap) "my-comint-minor-mode keymap.")
+(defvar my-org-minor-mode-map (make-keymap) "my-org-minor-mode keymap.")
 
 ;; re-map C-x and C-c
 (keyboard-translate ?\C-m ?\C-x)
@@ -220,7 +221,7 @@ current line and then calls f"
 (define-key my-keys-minor-mode-map "\M-b" 'backward-kill-word-or-region)
 (define-key my-keys-minor-mode-map "\C-b" 'backward-kill-word-or-region)
 (define-key my-keys-minor-mode-map "\C-f" 'er/expand-region)
-(define-key my-keys-minor-mode-map "\M-w" 'change-inner)
+;; (define-key my-keys-minor-mode-map "\M-w" 'change-inner)
 (define-key my-keys-minor-mode-map "\M-f" 'er/contract-region)
 (define-key my-keys-minor-mode-map "\C-o" 'my-open-line)
 (define-key my-keys-minor-mode-map "\C-v" 'yank)
@@ -247,6 +248,10 @@ current line and then calls f"
 (define-key my-comint-minor-mode-map "\C-p" 'comint-previous-input)
 (define-key my-comint-minor-mode-map "\C-t" 'comint-next-input)
 
+;; custom bindings for org mode
+(define-key my-org-minor-mode-map "\M-c" 'outline-previous-visible-heading)
+(define-key my-org-minor-mode-map "\M-t" 'outline-next-visible-heading)
+
 (define-minor-mode my-keys-minor-mode
   "A minor mode so that my key settings always override major modes."
   t " my-keys" 'my-keys-minor-mode-map)
@@ -254,6 +259,10 @@ current line and then calls f"
 (define-minor-mode my-comint-minor-mode
   "A minor mode for custom bindings specific to comint mode."
   nil " my-comint" 'my-comint-minor-mode-map)
+
+(define-minor-mode my-org-minor-mode
+  "A minor mode for custom bindings specific to org mode."
+  nil " my-org" 'my-org-minor-mode-map)
 
 
 ;; ------> mode hooks
@@ -274,6 +283,10 @@ current line and then calls f"
 ;; had to use another minor mode to override my-keys..
 (add-hook 'comint-mode-hook '(lambda ()
                                (my-comint-minor-mode)))
+
+;; had to use another minor mode to override my-keys..
+(add-hook 'org-mode-hook '(lambda ()
+                               (my-org-minor-mode)))
 
 ;; make autopair handle triple quotes in python
 (add-hook 'python-mode-hook
@@ -415,16 +428,16 @@ current line and then calls f"
 
 
 (custom-set-variables
-  ;; custom-set-variables was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
- )
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(org-agenda-files (quote ("~/projects/org_test.org"))))
 (custom-set-faces
-  ;; custom-set-faces was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
  '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 105 :width normal :foundry "unknown" :family "DejaVu Sans Mono"))))
  '(font-lock-comment-face ((((class color) (min-colors 88) (background light)) (:foreground "dark green" :slant italic))))
  '(font-lock-type-face ((((class color) (min-colors 88) (background light)) (:foreground "blue"))))
