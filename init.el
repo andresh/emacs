@@ -1,6 +1,4 @@
 
-;; R support requires ESS package
-
 ;; ------> library imports and configuration
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 (require 'autopair)
@@ -9,9 +7,6 @@
 
 (add-to-list 'load-path "~/.emacs.d/lisp/jinja2-mode/")
 (autoload 'jinja2-mode "jinja2-mode")
-
-;; (add-to-list 'load-path "~/.emacs.d/lisp/change-inner.el/")
-;; (autoload 'change-inner "change-inner.el")
 
 (add-to-list 'load-path "~/.emacs.d/lisp/expand-region.el/")
 (require 'expand-region)
@@ -53,6 +48,50 @@
 
 
 ;; ------> custom functions
+
+(defun sudo-edit ()
+  "Edit currently visited file as root."
+  (interactive)
+  (when (buffer-file-name)
+    (find-alternate-file (concat "/sudo:root@localhost:" buffer-file-name))))
+
+;; courtesy of emacsredux.com
+(defun smarter-move-beginning-of-line (arg)
+  "Move point back to indentation of beginning of line.
+
+Move point to the first non-whitespace character on this line.
+If point is already there, move to the beginning of the line.
+Effectively toggle between the first non-whitespace character and
+the beginning of the line.
+
+If ARG is not nil or 1, move forward ARG - 1 lines first.  If
+point reaches the beginning or end of the buffer, stop there."
+  (interactive "^p")
+  (setq arg (or arg 1))
+
+  ;; Move lines first
+  (when (/= arg 1)
+    (let ((line-move-visual nil))
+      (forward-line (1- arg))))
+
+  (let ((orig-point (point)))
+    (back-to-indentation)
+    (when (= orig-point (point))
+      (move-beginning-of-line 1))))
+
+(defun dired-dotfiles-toggle ()
+  "Show/hide dot-files"
+  (interactive)
+  (when (equal major-mode 'dired-mode)
+    (if (or (not (boundp 'dired-dotfiles-show-p)) dired-dotfiles-show-p) ; if currently showing
+        (progn
+          (set (make-local-variable 'dired-dotfiles-show-p) nil)
+          (message "h")
+          (dired-mark-files-regexp "^\\\.")
+          (dired-do-kill-lines))
+      (progn (revert-buffer) ; otherwise just revert to re-show
+             (set (make-local-variable 'dired-dotfiles-show-p) t)))))
+
 (defun python-send-region-or-buffer ()
   "if region is active then send it, otherwise send the current buffer"
   (interactive)
@@ -153,16 +192,18 @@ current line and then calls f"
                  (insert start-tag)))))
 
 (defun open-block ()
-  "add the colon for python compound statements, open a new line"
+  "add the colon for python compound statements in case in python-mode,
+then open a new line"
   (interactive)
   (back-to-indentation)
-  (if (member (thing-at-point 'word)
-              '("def" "for" "while" "class" "if" "try"
-                "with" "else" "elif" "try" "except" "finally"))
-    (progn
-      (end-of-line)
-      (when (not (looking-back ":" 1)) (insert ":"))
-      (newline-and-indent))
+  (if (and (equal (symbol-value 'major-mode) 'python-mode)
+           (member (thing-at-point 'word)
+                   '("def" "for" "while" "class" "if" "try"
+                     "with" "else" "elif" "try" "except" "finally")))
+      (progn
+        (end-of-line)
+        (when (not (looking-back ":" 1)) (insert ":"))
+        (newline-and-indent))
     (end-of-line)
     (newline-and-indent)))
 
@@ -215,6 +256,7 @@ current line and then calls f"
 (define-key my-keys-minor-mode-map "\M-c" 'backward-paragraph)
 (define-key my-keys-minor-mode-map "\C-t" 'next-line)
 (define-key my-keys-minor-mode-map "\M-t" 'forward-paragraph)
+(define-key my-keys-minor-mode-map "\C-a" 'smarter-move-beginning-of-line)
 
 ;; editing
 (define-key my-keys-minor-mode-map (kbd "C--") 'mark-line)
@@ -242,7 +284,10 @@ current line and then calls f"
 ;; other
 (define-key my-keys-minor-mode-map (kbd "<escape>") 'keyboard-escape-quit)
 (define-key my-keys-minor-mode-map (kbd "<f8>") 'find-file)
+(define-key my-keys-minor-mode-map (kbd "<f7>") 'sudo-edit)
+
 ;; (define-key my-keys-minor-mode-map (kbd "C-.") 'hippie-expand)
+(define-key my-keys-minor-mode-map (kbd "`") 'dired-dotfiles-toggle)
 
 ;; in comint, up/down cycles through input history
 (define-key my-comint-minor-mode-map "\C-p" 'comint-previous-input)
@@ -336,7 +381,21 @@ current line and then calls f"
 ;; disable back-ups
 ;; (setq make-backup-files nil)
 
+;; ;; custom folder for backups
+;; (defvar my-auto-save-folder "~/.saves")
+;; (setq backup-directory-alist `((".*" . ,my-auto-save-folder)))
+;; (setq auto-save-file-name-transforms `((".*" ,my-auto-save-folder t)))
+;; ;; set same backup paths for Tramp
+;; (setq tramp-backup-directory-alist backup-directory-alist)
+;; (setq tramp-auto-save-directory my-auto-save-folder)
+
 ;; (setq-default line-spacing 2)
+
+;; display file path in window title
+(setq frame-title-format
+      '((:eval (if (buffer-file-name)
+                   (abbreviate-file-name (buffer-file-name))
+                 "%b"))))
 
 (put 'dired-find-alternate-file 'disabled nil)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
@@ -427,12 +486,6 @@ current line and then calls f"
 (global-set-key [f11] 'toggle-fullscreen)
 
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(org-agenda-files (quote ("~/projects/org_test.org"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
