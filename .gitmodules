@@ -16,3 +16,9 @@
 [submodule "lisp/jinja2-mode"]
 	path = lisp/jinja2-mode
 	url = git@github.com:paradoxxxzero/jinja2-mode.git
+[submodule "smartparens"]
+	path = smartparens
+	url = github.com:Fuco1/smartparens.git
+[submodule "lisp/smartparens"]
+	path = lisp/smartparens
+	url = git@github.com:Fuco1/smartparens.git

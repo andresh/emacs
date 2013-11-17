@@ -1,9 +1,9 @@
 
 ;; ------> library imports and configuration
 (add-to-list 'load-path "~/.emacs.d/lisp/")
-(require 'autopair)
-(autopair-global-mode) ;; enable autopair in all buffers
-;; (setq autopair-blink nil)
+
+;; (require 'autopair)
+;; (autopair-global-mode) ;; enable autopair in all buffers
 
 (add-to-list 'load-path "~/.emacs.d/lisp/jinja2-mode/")
 (autoload 'jinja2-mode "jinja2-mode")
@@ -49,6 +49,13 @@
 
 ;; ------> custom functions
 
+(defun upcase-previous-word ()
+  "like upcase-word but moving over the words backwards"
+  (interactive)
+  (backward-word)
+  (save-excursion
+    (upcase-word 1)))
+
 (defun sudo-edit ()
   "Edit currently visited file as root."
   (interactive)
@@ -92,6 +99,11 @@ point reaches the beginning or end of the buffer, stop there."
       (progn (revert-buffer) ; otherwise just revert to re-show
              (set (make-local-variable 'dired-dotfiles-show-p) t)))))
 
+(defun my-jedi-goto-definition ()
+  (interactive)
+  (set-mark (point))
+  (call-interactively 'jedi:goto-definition))
+
 (defun python-send-region-or-buffer ()
   "if region is active then send it, otherwise send the current buffer"
   (interactive)
@@ -126,14 +138,6 @@ point reaches the beginning or end of the buffer, stop there."
       (kill-region (save-excursion (my-backward-word) (point))
                    (point)))))
 
-(defun copy-line-or-region ()
-  (interactive)
-  (apply-to-line-or-region 'kill-ring-save))
-
-(defun kill-line-or-region ()
-  (interactive)
-  (apply-to-line-or-region 'kill-region))
-
 ;; TODO: probably there's a better way to do this....
 (defun apply-to-line-or-region (f)
   "If region is selected then just calls f, otherwise selects the
@@ -145,14 +149,6 @@ current line and then calls f"
       (mark-line)
       (call-interactively f)
       (message (concat (symbol-name f) ": current line")))))
-
-(defun comment-line-or-region ()
-  (interactive)
-  (apply-to-line-or-region 'comment-region))
-
-(defun uncomment-line-or-region ()
-  (interactive)
-  (apply-to-line-or-region 'uncomment-region))
 
 (defun mark-line ()
   (interactive)
@@ -222,9 +218,13 @@ then open a new line"
 (define-key (current-global-map) [remap backward-word] 'my-backward-word)
 (define-key (current-global-map) [remap forward-word] 'my-forward-word)
 (define-key (current-global-map) [remap comment-region]
-  'comment-line-or-region)
+  '(lambda ()
+     (interactive)
+     (apply-to-line-or-region 'comment-region)))
 (define-key (current-global-map) [remap uncomment-region]
-  'uncomment-line-or-region)
+  '(lambda ()
+     (interactive)
+     (apply-to-line-or-region 'uncomment-region)))
 
 ;; ------> keybindings for Dvorak layout
 (defvar my-keys-minor-mode-map (make-keymap) "my-keys-minor-mode keymap.")
@@ -263,7 +263,6 @@ then open a new line"
 (define-key my-keys-minor-mode-map "\M-b" 'backward-kill-word-or-region)
 (define-key my-keys-minor-mode-map "\C-b" 'backward-kill-word-or-region)
 (define-key my-keys-minor-mode-map "\C-f" 'er/expand-region)
-;; (define-key my-keys-minor-mode-map "\M-w" 'change-inner)
 (define-key my-keys-minor-mode-map "\M-f" 'er/contract-region)
 (define-key my-keys-minor-mode-map "\C-o" 'my-open-line)
 (define-key my-keys-minor-mode-map "\C-v" 'yank)
@@ -271,8 +270,15 @@ then open a new line"
 (define-key my-keys-minor-mode-map (kbd "C-x r") 'replace-string)
 (define-key my-keys-minor-mode-map "\M-l" 'recenter-top-bottom)
 (define-key my-keys-minor-mode-map (kbd "<C-return>") 'open-block)
-(define-key my-keys-minor-mode-map (kbd "C-y") 'copy-line-or-region)
-(define-key my-keys-minor-mode-map (kbd "C-w") 'kill-line-or-region)
+
+(define-key my-keys-minor-mode-map (kbd "C-y") '(lambda ()
+                                                  (interactive)
+                                                  (apply-to-line-or-region 'kill-ring-save)))
+(define-key my-keys-minor-mode-map (kbd "C-w") '(lambda ()
+                                                  (interactive)
+                                                  (apply-to-line-or-region 'kill-region)))
+
+(define-key my-keys-minor-mode-map (kbd "C-=") 'upcase-previous-word)
 ;; use keyboard-translate to make C-d decrease indentation in Python mode
 (keyboard-translate ?\C-d ?\C-?)
 (define-key my-keys-minor-mode-map (kbd "M-d") 'backward-kill-char)
@@ -286,9 +292,6 @@ then open a new line"
 (define-key my-keys-minor-mode-map (kbd "<f8>") 'find-file)
 (define-key my-keys-minor-mode-map (kbd "<f7>") 'sudo-edit)
 
-;; (define-key my-keys-minor-mode-map (kbd "C-.") 'hippie-expand)
-(define-key my-keys-minor-mode-map (kbd "`") 'dired-dotfiles-toggle)
-
 ;; in comint, up/down cycles through input history
 (define-key my-comint-minor-mode-map "\C-p" 'comint-previous-input)
 (define-key my-comint-minor-mode-map "\C-t" 'comint-next-input)
@@ -296,6 +299,9 @@ then open a new line"
 ;; custom bindings for org mode
 (define-key my-org-minor-mode-map "\M-c" 'outline-previous-visible-heading)
 (define-key my-org-minor-mode-map "\M-t" 'outline-next-visible-heading)
+(define-key my-org-minor-mode-map "\C-cd" 'org-deadline)
+(define-key my-org-minor-mode-map "\C-cs" 'org-schedule)
+(define-key my-org-minor-mode-map "\C-ca" 'org-agenda)
 
 (define-minor-mode my-keys-minor-mode
   "A minor mode so that my key settings always override major modes."
@@ -317,7 +323,8 @@ then open a new line"
              (define-key dired-mode-map (kbd "<return>")
                'dired-find-alternate-file)
              (define-key dired-mode-map "t" 'dired-next-line)
-             (define-key dired-mode-map "c" 'dired-previous-line)))
+             (define-key dired-mode-map "c" 'dired-previous-line)
+             (define-key dired-mode-map (kbd "<tab>") 'dired-dotfiles-toggle)))
 
 ;; html mode: switch to jinja2 mode and bind key for tag insertion
 (setq html-mode-hook
@@ -329,16 +336,19 @@ then open a new line"
 (add-hook 'comint-mode-hook '(lambda ()
                                (my-comint-minor-mode)))
 
-;; had to use another minor mode to override my-keys..
 (add-hook 'org-mode-hook '(lambda ()
                                (my-org-minor-mode)))
 
+(add-hook 'org-agenda-mode-hook '(lambda ()
+                            (define-key org-agenda-mode-map (kbd "t") 'org-agenda-next-line)
+                            (define-key org-agenda-mode-map (kbd "c") 'org-agenda-previous-line)))
+
 ;; make autopair handle triple quotes in python
-(add-hook 'python-mode-hook
-          #'(lambda ()
-              (setq autopair-handle-action-fns
-                    (list #'autopair-default-handle-action
-                          #'autopair-python-triple-quote-action))))
+;; (add-hook 'python-mode-hook
+;;           #'(lambda ()
+;;               (setq autopair-handle-action-fns
+;;                     (list #'autopair-default-handle-action
+;;                           #'autopair-python-triple-quote-action))))
 
 (add-hook 'python-mode-hook
           '(lambda ()
@@ -375,9 +385,40 @@ then open a new line"
 ;; ------> files/folders to open at startup
 (find-file "~/.emacs.d/init.el")
 (find-file "~/projects")
+;; (find-file "~/notes")
+
+;; ------> org mode
+(setq org-startup-folded nil)
+(setq org-directory "~/notes/")
+(setq org-agenda-files '("~/notes/"))
+(setq org-default-notes-file (concat org-directory "/capture.org")) ;; file for capture notes
+(define-key global-map "\C-cp" 'org-capture)
+(setq org-refile-targets '((nil :maxlevel . 2)
+                                ; all top-level headlines in the
+                                ; current buffer are used (first) as a
+                                ; refile target
+                           (org-agenda-files :maxlevel . 2)))
+
+(setq org-log-done 'time)
+(setq org-agenda-start-on-weekday 1)
+;; (setq org-default-notes-file (concat org-directory "test.org"))
+
+(setq org-agenda-ndays 7)
+(setq org-agenda-show-all-dates t)
+;; (setq org-agenda-skip-deadline-if-done t)
+;; (setq org-agenda-skip-scheduled-if-done t)
+(setq org-agenda-start-on-weekday nil)
+
+
+;; (setq org-todo-keywords
+      ;; '((sequence "TODO(t)" "SOMEDAY(s)" "MORE(m)" "|" "DONE(d)" "WAIT(w)" "WONT(n)")))
+;; (setq org-use-fast-todo-selection t)
 
 
 ;; ------> misc settings
+
+(setq erc-hide-list '("JOIN" "PART" "QUIT")) ;; hide join/quit messages in IRC
+
 ;; disable back-ups
 ;; (setq make-backup-files nil)
 
@@ -400,12 +441,10 @@ then open a new line"
 (put 'dired-find-alternate-file 'disabled nil)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 
-;; (show-paren-mode 1) ;;display matching parens
 (column-number-mode 1) ;; display column number on mode line
 (global-visual-line-mode 1) ;;wrap long lines at word boundaries
 (blink-cursor-mode 0) ;;disable cursor blinking
-;; (setq blink-matching-paren t)
-(setq blink-matching-delay 0.5)
+(setq blink-matching-delay 0.1)
 
 ;; indentation
 (setq-default indent-tabs-mode nil) ; always replace tabs with spaces
