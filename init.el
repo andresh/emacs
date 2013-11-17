@@ -5,6 +5,11 @@
 ;; (require 'autopair)
 ;; (autopair-global-mode) ;; enable autopair in all buffers
 
+(add-to-list 'load-path "~/.emacs.d/lisp/dash/")
+(add-to-list 'load-path "~/.emacs.d/lisp/smartparens/")
+(require 'smartparens)
+(smartparens-global-mode 1)
+
 (add-to-list 'load-path "~/.emacs.d/lisp/jinja2-mode/")
 (autoload 'jinja2-mode "jinja2-mode")
 
