@@ -2,13 +2,15 @@
 ;; ------> library imports and configuration
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 
-;; (require 'autopair)
-;; (autopair-global-mode) ;; enable autopair in all buffers
-
+;; smartparens
 (add-to-list 'load-path "~/.emacs.d/lisp/dash/")
 (add-to-list 'load-path "~/.emacs.d/lisp/smartparens/")
 (require 'smartparens)
+
 (smartparens-global-mode 1)
+(setq sp-highlight-pair-overlay nil) ;; do not color the pairs
+(setq sp-autoescape-string-quote nil) ;; turn off autoescaping of quotes inside strings
+
 
 (add-to-list 'load-path "~/.emacs.d/lisp/jinja2-mode/")
 (autoload 'jinja2-mode "jinja2-mode")
@@ -153,7 +155,7 @@ current line and then calls f"
     (save-excursion
       (mark-line)
       (call-interactively f)
-      (message (concat (symbol-name f) ": current line")))))
+      (message (concat "Applied to current line: " (symbol-name f))))))
 
 (defun mark-line ()
   (interactive)
@@ -253,7 +255,7 @@ then open a new line"
 (define-key my-keys-minor-mode-map (kbd "M-9") "{")
 (define-key my-keys-minor-mode-map (kbd "M-0") "}")
 
-;; cursor movement
+;; cursor movement/navigation
 (define-key my-keys-minor-mode-map "\C-h" 'backward-char)
 (define-key my-keys-minor-mode-map "\M-h" 'backward-word)
 (define-key my-keys-minor-mode-map "\C-n" 'forward-char)
@@ -262,6 +264,7 @@ then open a new line"
 (define-key my-keys-minor-mode-map "\C-t" 'next-line)
 (define-key my-keys-minor-mode-map "\M-t" 'forward-paragraph)
 (define-key my-keys-minor-mode-map "\C-a" 'smarter-move-beginning-of-line)
+(define-key my-keys-minor-mode-map (kbd "C-x C-n") 'other-window)
 
 ;; editing
 (define-key my-keys-minor-mode-map (kbd "C--") 'mark-line)
@@ -348,12 +351,6 @@ then open a new line"
                             (define-key org-agenda-mode-map (kbd "t") 'org-agenda-next-line)
                             (define-key org-agenda-mode-map (kbd "c") 'org-agenda-previous-line)))
 
-;; make autopair handle triple quotes in python
-;; (add-hook 'python-mode-hook
-;;           #'(lambda ()
-;;               (setq autopair-handle-action-fns
-;;                     (list #'autopair-default-handle-action
-;;                           #'autopair-python-triple-quote-action))))
 
 (add-hook 'python-mode-hook
           '(lambda ()
