@@ -2,6 +2,10 @@
 ;; ------> library imports and configuration
 (add-to-list 'load-path "~/.emacs.d/lisp/")
 
+(require 'quack)
+(setq quack-default-program "scheme")
+(setq quack-run-scheme-always-prompts-p nil)
+
 ;; smartparens
 (add-to-list 'load-path "~/.emacs.d/lisp/dash/")
 (add-to-list 'load-path "~/.emacs.d/lisp/smartparens/")
@@ -26,7 +30,7 @@
 ;; auto-complete
 (add-to-list 'load-path "~/.emacs.d/lisp/auto-complete.el/")
 (require 'auto-complete-config)
-(add-to-list 'ac-dictionary-directories "~/.emacs.d/lisp/auto-complete.el//ac-dict")
+(add-to-list 'ac-dictionary-directories "~/.emacs.d/lisp/auto-complete.el/ac-dict")
 (ac-config-default)
 (setq ac-auto-start 4)
 (setq ac-dwim t)
@@ -111,13 +115,13 @@ point reaches the beginning or end of the buffer, stop there."
   (set-mark (point))
   (call-interactively 'jedi:goto-definition))
 
+;; TODO: fix this
 (defun python-send-region-or-buffer ()
   "if region is active then send it, otherwise send the current buffer"
   (interactive)
   (if (and transient-mark-mode mark-active)
-      (python-send-region-and-go (mark) (point))
-    (python-send-buffer)
-    (python-switch-to-python t)))
+      (python-shell-send-region (mark) (point))
+    (python-shell-send-buffer)))
 
 (defun my-forward-word ()
   "leaves the cursor at the start of the word, also stops at newlines"
@@ -145,7 +149,6 @@ point reaches the beginning or end of the buffer, stop there."
       (kill-region (save-excursion (my-backward-word) (point))
                    (point)))))
 
-;; TODO: probably there's a better way to do this....
 (defun apply-to-line-or-region (f)
   "If region is selected then just calls f, otherwise selects the
 current line and then calls f"
@@ -154,8 +157,7 @@ current line and then calls f"
       (call-interactively f)
     (save-excursion
       (mark-line)
-      (call-interactively f)
-      (message (concat "Applied to current line: " (symbol-name f))))))
+      (call-interactively f))))
 
 (defun mark-line ()
   (interactive)
@@ -235,8 +237,8 @@ then open a new line"
 
 ;; ------> keybindings for Dvorak layout
 (defvar my-keys-minor-mode-map (make-keymap) "my-keys-minor-mode keymap.")
-(defvar my-comint-minor-mode-map (make-keymap) "my-comint-minor-mode keymap.")
-(defvar my-org-minor-mode-map (make-keymap) "my-org-minor-mode keymap.")
+(defvar my-comint-minor-mode-map (make-sparse-keymap) "my-comint-minor-mode keymap.")
+(defvar my-org-minor-mode-map (make-sparse-keymap) "my-org-minor-mode keymap.")
 
 ;; re-map C-x and C-c
 (keyboard-translate ?\C-m ?\C-x)
@@ -248,6 +250,7 @@ then open a new line"
 (define-key isearch-mode-map "\C-h" 'isearch-repeat-backward)
 (define-key isearch-mode-map "\C-t" 'isearch-exit)
 (define-key isearch-mode-map "\C-d" 'isearch-delete-char)
+;; (define-key isearch-mode-map "\C-b" 'isearch-delete-char)
 
 ;; brackets ;;TODO: move to .Xmodmap
 (define-key my-keys-minor-mode-map (kbd "C-9") "[")
@@ -278,7 +281,7 @@ then open a new line"
 (define-key my-keys-minor-mode-map (kbd "C-x r") 'replace-string)
 (define-key my-keys-minor-mode-map "\M-l" 'recenter-top-bottom)
 (define-key my-keys-minor-mode-map (kbd "<C-return>") 'open-block)
-
+(define-key my-keys-minor-mode-map (kbd "C-x C-u") 'undo)
 (define-key my-keys-minor-mode-map (kbd "C-y") '(lambda ()
                                                   (interactive)
                                                   (apply-to-line-or-region 'kill-ring-save)))
@@ -355,13 +358,18 @@ then open a new line"
 (add-hook 'python-mode-hook
           '(lambda ()
              (define-key python-mode-map (kbd "<f9>")
-               'python-switch-to-python)
+               'python-shell-switch-to-shell)
              (define-key python-mode-map (kbd "<f10>")
                'python-send-region-or-buffer)
              (define-key python-mode-map (kbd "<f12>")
                'my-compile)))
 
 (add-hook 'python-mode-hook 'jedi:setup)
+
+(add-hook 'scheme-mode-hook
+          (lambda ()
+            (define-key scheme-mode-map (kbd "C-c C-c")
+              'scheme-send-definition-and-go)))
 
 ;; settings for R
 (setq ess-ask-for-ess-directory nil)
@@ -539,3 +547,9 @@ then open a new line"
  '(region ((((class color) (min-colors 88) (background light)) (:background "light grey")))))
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(quack-programs (quote ("mzscheme" "bigloo" "csi" "csi -hygienic" "gosh" "gracket" "gsi" "gsi ~~/syntax-case.scm -" "guile" "kawa" "mit-scheme" "racket" "racket -il typed/racket" "rs" "scheme" "scheme48" "scsh" "sisc" "stklos" "sxi"))))
