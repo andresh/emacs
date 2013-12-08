@@ -1,34 +1,25 @@
 
-;; ------> library imports and configuration
-(add-to-list 'load-path "~/.emacs.d/lisp/")
+;; ------> add load paths: /lisp and its subdirs
+(let ((load-base "~/.emacs.d/lisp"))
+  (mapcar (lambda (x)
+            (add-to-list 'load-path x))
+          (cons load-base (append
+                     (directory-files load-base t "[^\.]$")))))
 
+;; ------> library imports and configuration
+;; quack
 (require 'quack)
 (setq quack-default-program "scheme")
 (setq quack-run-scheme-always-prompts-p nil)
 
 ;; smartparens
-(add-to-list 'load-path "~/.emacs.d/lisp/dash/")
-(add-to-list 'load-path "~/.emacs.d/lisp/smartparens/")
 (require 'smartparens)
 
 (smartparens-global-mode 1)
 (setq sp-highlight-pair-overlay nil) ;; do not color the pairs
 (setq sp-autoescape-string-quote nil) ;; turn off autoescaping of quotes inside strings
 
-
-(add-to-list 'load-path "~/.emacs.d/lisp/jinja2-mode/")
-(autoload 'jinja2-mode "jinja2-mode")
-
-(add-to-list 'load-path "~/.emacs.d/lisp/expand-region.el/")
-(require 'expand-region)
-
-(require 'control-lock)
-(control-lock-keys)
-
-(autoload 'forward-to-word "misc" t)
-
 ;; auto-complete
-(add-to-list 'load-path "~/.emacs.d/lisp/auto-complete.el/")
 (require 'auto-complete-config)
 (add-to-list 'ac-dictionary-directories "~/.emacs.d/lisp/auto-complete.el/ac-dict")
 (ac-config-default)
@@ -37,28 +28,36 @@
 (setq ac-use-menu-map t)
 (setq ac-auto-show-menu 0.8)
 
-;; set bindings to control the completion menu
+;; set autocomplete bindings to control the completion menu
 (define-key ac-menu-map "\C-t" 'ac-next)
 (define-key ac-menu-map "\C-c" 'ac-previous)
 (define-key ac-menu-map "\C-n" nil) ;; remove the default binding
 (define-key ac-menu-map "\M-n" nil) ;; remove the default binding
 
-
 ;; jedi (python autocompletion library, uses auto-complete)
-(add-to-list 'load-path "~/.emacs.d/lisp/emacs-epc")
-(add-to-list 'load-path "~/.emacs.d/lisp/emacs-ctable")
-(add-to-list 'load-path "~/.emacs.d/lisp/emacs-deferred")
-(add-to-list 'load-path "~/.emacs.d/lisp/emacs-jedi")
 (autoload 'jedi:setup "jedi" nil t)
 (setq jedi:setup-keys t)
 (setq jedi:complete-on-dot t)
 (setq jedi:tooltip-method nil)
 (setq jedi:get-in-function-call-delay 0)
 
-;; (require 'nose)
-
+;; other
+(autoload 'jinja2-mode "jinja2-mode")
+(require 'expand-region)
+(require 'control-lock)
+(control-lock-keys)
+(autoload 'forward-to-word "misc" t)
 
 ;; ------> custom functions
+
+(defun ess-eval-region-or-buffer ()
+  (interactive)
+  (let (w)
+    (setq w (get-buffer-window))
+    (if (and transient-mark-mode mark-active)
+        (call-interactively 'ess-eval-region-and-go)
+      (call-interactively 'ess-eval-buffer-and-go))
+    (select-window w)))
 
 (defun upcase-previous-word ()
   "like upcase-word but moving over the words backwards"
@@ -115,7 +114,6 @@ point reaches the beginning or end of the buffer, stop there."
   (set-mark (point))
   (call-interactively 'jedi:goto-definition))
 
-;; TODO: fix this
 (defun python-send-region-or-buffer ()
   "if region is active then send it, otherwise send the current buffer"
   (interactive)
@@ -381,16 +379,6 @@ then open a new line"
           '(lambda ()
              (define-key ess-mode-map (kbd "<f12>")
                'ess-eval-region-or-buffer)))
-
-(defun ess-eval-region-or-buffer ()
-  (interactive)
-  (let (w)
-    (setq w (get-buffer-window))
-    (if (and transient-mark-mode mark-active)
-        (call-interactively 'ess-eval-region-and-go)
-      (call-interactively 'ess-eval-buffer-and-go))
-    (select-window w)))
-
 
 ;; ------> files/folders to open at startup
 (find-file "~/.emacs.d/init.el")
