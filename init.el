@@ -7,17 +7,29 @@
                      (directory-files load-base t "[^\.]$")))))
 
 ;; ------> library imports and configuration
+
+;; slime
+(setq inferior-lisp-program "/usr/bin/sbcl") ; your Lisp system
+(setq common-lisp-hyperspec-root "file:///usr/share/doc/hyperspec/")
+(setq slime-backend "~/.emacs.d/lisp/slime-2013-12-09/swank-loader.lisp")
+(require 'slime)
+(slime-setup '(slime-fancy slime-autodoc slime-asdf slime-banner slime-indentation))
+
 ;; quack
-(require 'quack)
-(setq quack-default-program "scheme")
-(setq quack-run-scheme-always-prompts-p nil)
+;; (require 'quack)
+;; (setq quack-default-program "scheme")
+;; (setq quack-run-scheme-always-prompts-p nil)
 
 ;; smartparens
 (require 'smartparens)
-
 (smartparens-global-mode 1)
 (setq sp-highlight-pair-overlay nil) ;; do not color the pairs
 (setq sp-autoescape-string-quote nil) ;; turn off autoescaping of quotes inside strings
+;; turn off quote and backquote pairs in lisp
+(sp-local-pair 'lisp-mode "'" nil :actions nil)
+(sp-local-pair 'lisp-mode "`" nil :actions nil)
+(sp-local-pair 'emacs-lisp-mode "'" nil :actions nil)
+(sp-local-pair 'emacs-lisp-mode "`" nil :actions nil)
 
 ;; auto-complete
 (require 'auto-complete-config)
@@ -49,6 +61,19 @@
 (autoload 'forward-to-word "misc" t)
 
 ;; ------> custom functions
+
+(defun switch-to-other-buffer ()
+  (interactive)
+  (switch-to-buffer (other-buffer)))
+
+
+(defun scheme-eval-last-and-run ()
+  (interactive)
+  (let (w)
+    (setq w (get-buffer-window))
+    (call-interactively 'scheme-send-last-sexp)
+    (call-interactively 'run-scheme)
+    (select-window w)))
 
 (defun ess-eval-region-or-buffer ()
   (interactive)
@@ -216,8 +241,6 @@ then open a new line"
   (save-buffer)
   (compile (concat "python " (buffer-name))))
 
-(setq compilation-scroll-output t)
-
 ;; ------> global re-mappings
 (define-key (current-global-map) [remap backward-kill-word]
   'backward-kill-word-or-region)
@@ -237,6 +260,7 @@ then open a new line"
 (defvar my-keys-minor-mode-map (make-keymap) "my-keys-minor-mode keymap.")
 (defvar my-comint-minor-mode-map (make-sparse-keymap) "my-comint-minor-mode keymap.")
 (defvar my-org-minor-mode-map (make-sparse-keymap) "my-org-minor-mode keymap.")
+(defvar my-slime-repl-minor-mode-map (make-sparse-keymap) "my-slime-repl-minor-mode keymap.")
 
 ;; re-map C-x and C-c
 (keyboard-translate ?\C-m ?\C-x)
@@ -248,7 +272,7 @@ then open a new line"
 (define-key isearch-mode-map "\C-h" 'isearch-repeat-backward)
 (define-key isearch-mode-map "\C-t" 'isearch-exit)
 (define-key isearch-mode-map "\C-d" 'isearch-delete-char)
-;; (define-key isearch-mode-map "\C-b" 'isearch-delete-char)
+(define-key isearch-mode-map "\C-b" 'isearch-edit-string)
 
 ;; brackets ;;TODO: move to .Xmodmap
 (define-key my-keys-minor-mode-map (kbd "C-9") "[")
@@ -266,6 +290,7 @@ then open a new line"
 (define-key my-keys-minor-mode-map "\M-t" 'forward-paragraph)
 (define-key my-keys-minor-mode-map "\C-a" 'smarter-move-beginning-of-line)
 (define-key my-keys-minor-mode-map (kbd "C-x C-n") 'other-window)
+(define-key my-keys-minor-mode-map (kbd "C-x C-t") 'switch-to-other-buffer)
 
 ;; editing
 (define-key my-keys-minor-mode-map (kbd "C--") 'mark-line)
@@ -290,7 +315,8 @@ then open a new line"
 (define-key my-keys-minor-mode-map (kbd "C-=") 'upcase-previous-word)
 ;; use keyboard-translate to make C-d decrease indentation in Python mode
 (keyboard-translate ?\C-d ?\C-?)
-(define-key my-keys-minor-mode-map (kbd "M-d") 'backward-kill-char)
+(define-key my-keys-minor-mode-map (kbd "M-d") 'delete-char)
+(define-key my-keys-minor-mode-map (kbd "C-j") 'er/mark-inside-pairs)
 
 ;; commenting
 (define-key my-keys-minor-mode-map (kbd "<f5>") 'comment-region)
@@ -312,6 +338,10 @@ then open a new line"
 (define-key my-org-minor-mode-map "\C-cs" 'org-schedule)
 (define-key my-org-minor-mode-map "\C-ca" 'org-agenda)
 
+;; custom bindings for slime repl
+(define-key my-slime-repl-minor-mode-map "\C-p" 'slime-repl-previous-input)
+(define-key my-slime-repl-minor-mode-map "\C-t" 'slime-repl-next-input)
+
 (define-minor-mode my-keys-minor-mode
   "A minor mode so that my key settings always override major modes."
   t " my-keys" 'my-keys-minor-mode-map)
@@ -324,9 +354,17 @@ then open a new line"
   "A minor mode for custom bindings specific to org mode."
   nil " my-org" 'my-org-minor-mode-map)
 
+(define-minor-mode my-slime-repl-minor-mode
+  "A minor mode for custom bindings specific to slime-repl mode."
+  nil " my-slime-repl" 'my-slime-repl-minor-mode-map)
 
 ;; ------> mode hooks
 ;; prevent dired from opening up many buffers
+
+(add-hook 'scheme-mode-hook
+          '(lambda ()
+             (define-key scheme-mode-map (kbd "<f12>") 'scheme-eval-last-and-run)))
+
 (add-hook 'dired-mode-hook
           '(lambda ()
              (define-key dired-mode-map (kbd "<return>")
@@ -345,13 +383,16 @@ then open a new line"
 (add-hook 'comint-mode-hook '(lambda ()
                                (my-comint-minor-mode)))
 
+(add-hook 'slime-repl-mode-hook '(lambda ()
+                               (my-slime-repl-minor-mode)))
+
 (add-hook 'org-mode-hook '(lambda ()
-                               (my-org-minor-mode)))
+                               (my-org-minor-mode)
+                               (define-key org-mode-map (kbd "C-,") nil)))
 
 (add-hook 'org-agenda-mode-hook '(lambda ()
                             (define-key org-agenda-mode-map (kbd "t") 'org-agenda-next-line)
                             (define-key org-agenda-mode-map (kbd "c") 'org-agenda-previous-line)))
-
 
 (add-hook 'python-mode-hook
           '(lambda ()
@@ -364,24 +405,24 @@ then open a new line"
 
 (add-hook 'python-mode-hook 'jedi:setup)
 
-(add-hook 'scheme-mode-hook
-          (lambda ()
-            (define-key scheme-mode-map (kbd "C-c C-c")
-              'scheme-send-definition-and-go)))
+;; (add-hook 'scheme-mode-hook
+;;           (lambda ()
+;;             (define-key scheme-mode-map (kbd "C-c C-c")
+;;               'scheme-send-definition-and-go)))
 
 ;; settings for R
-(setq ess-ask-for-ess-directory nil)
-(setq comint-scroll-to-bottom-on-input t)
-(setq comint-scroll-to-bottom-on-output t)
-(setq comint-move-point-for-output t)
+;; (setq ess-ask-for-ess-directory nil)
+;; (setq comint-scroll-to-bottom-on-input t)
+;; (setq comint-scroll-to-bottom-on-output t)
+;; (setq comint-move-point-for-output t)
 
-(add-hook 'ess-mode-hook
-          '(lambda ()
-             (define-key ess-mode-map (kbd "<f12>")
-               'ess-eval-region-or-buffer)))
+;; (add-hook 'ess-mode-hook
+;;           '(lambda ()
+;;              (define-key ess-mode-map (kbd "<f12>")
+;;                'ess-eval-region-or-buffer)))
 
 ;; ------> files/folders to open at startup
-(find-file "~/.emacs.d/init.el")
+;; (find-file "~/.emacs.d/init.el")
 (find-file "~/projects")
 ;; (find-file "~/notes")
 
@@ -414,7 +455,7 @@ then open a new line"
 
 
 ;; ------> misc settings
-
+(setq compilation-scroll-output t) ;; scroll to the end of compilation buffer
 (setq erc-hide-list '("JOIN" "PART" "QUIT")) ;; hide join/quit messages in IRC
 
 ;; disable back-ups
@@ -477,8 +518,8 @@ then open a new line"
       (mapc (lambda (K)
 	      (let* ((key (car K)) (fun (cdr K)))
     	        (define-key iswitchb-mode-map (edmacro-parse-keys key) fun)))
-	    '(("<right>" . iswitchb-next-match)
-	      ("<left>"  . iswitchb-prev-match)
+	    '(("<left>" . iswitchb-next-match)
+	      ("<right>"  . iswitchb-prev-match)
 	      ("<up>"    . ignore             )
 	      ("<down>"  . ignore             ))))
 
@@ -540,4 +581,4 @@ then open a new line"
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(quack-programs (quote ("mzscheme" "bigloo" "csi" "csi -hygienic" "gosh" "gracket" "gsi" "gsi ~~/syntax-case.scm -" "guile" "kawa" "mit-scheme" "racket" "racket -il typed/racket" "rs" "scheme" "scheme48" "scsh" "sisc" "stklos" "sxi"))))
+ '(line-spacing 1))
