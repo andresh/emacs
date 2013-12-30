@@ -59,6 +59,7 @@
 (require 'control-lock)
 (control-lock-keys)
 (autoload 'forward-to-word "misc" t)
+(require 'my-keys)
 
 ;; ------> custom functions
 
@@ -75,14 +76,14 @@
     (call-interactively 'run-scheme)
     (select-window w)))
 
-(defun ess-eval-region-or-buffer ()
-  (interactive)
-  (let (w)
-    (setq w (get-buffer-window))
-    (if (and transient-mark-mode mark-active)
-        (call-interactively 'ess-eval-region-and-go)
-      (call-interactively 'ess-eval-buffer-and-go))
-    (select-window w)))
+;; (defun ess-eval-region-or-buffer ()
+;;   (interactive)
+;;   (let (w)
+;;     (setq w (get-buffer-window))
+;;     (if (and transient-mark-mode mark-active)
+;;         (call-interactively 'ess-eval-region-and-go)
+;;       (call-interactively 'ess-eval-buffer-and-go))
+;;     (select-window w)))
 
 (defun upcase-previous-word ()
   "like upcase-word but moving over the words backwards"
@@ -258,9 +259,9 @@ then open a new line"
 
 ;; ------> keybindings for Dvorak layout
 (defvar my-keys-minor-mode-map (make-keymap) "my-keys-minor-mode keymap.")
-(defvar my-comint-minor-mode-map (make-sparse-keymap) "my-comint-minor-mode keymap.")
-(defvar my-org-minor-mode-map (make-sparse-keymap) "my-org-minor-mode keymap.")
-(defvar my-slime-repl-minor-mode-map (make-sparse-keymap) "my-slime-repl-minor-mode keymap.")
+(define-minor-mode my-keys-minor-mode
+  "A minor mode so that my key settings always override major modes."
+  t " my-keys" 'my-keys-minor-mode-map)
 
 ;; re-map C-x and C-c
 (keyboard-translate ?\C-m ?\C-x)
@@ -285,9 +286,24 @@ then open a new line"
 (define-key my-keys-minor-mode-map "\M-h" 'backward-word)
 (define-key my-keys-minor-mode-map "\C-n" 'forward-char)
 (define-key my-keys-minor-mode-map "\M-n" 'forward-word)
-(define-key my-keys-minor-mode-map "\M-c" 'backward-paragraph)
-(define-key my-keys-minor-mode-map "\C-t" 'next-line)
-(define-key my-keys-minor-mode-map "\M-t" 'forward-paragraph)
+(define-key my-keys-minor-mode-map "\M-c"
+  (call-unless :default 'backward-paragraph
+               (call-if-major-mode 'outline-previous-visible-heading 'org-mode)))
+
+(define-key my-keys-minor-mode-map "\C-t"
+  (call-unless :default 'next-line
+               (call-if-major-mode 'slime-repl-next-input 'slime-repl-mode)
+               (call-if-major-mode 'comint-next-input 'comint-mode)))
+
+(define-key my-keys-minor-mode-map "\C-p"
+  (call-unless :default 'previous-line
+               (call-if-major-mode 'slime-repl-previous-input 'slime-repl-mode)
+               (call-if-major-mode 'comint-previous-input 'comint-mode)))
+
+(define-key my-keys-minor-mode-map "\M-t"
+  (call-unless :default 'forward-paragraph
+               (call-if-major-mode 'outline-next-visible-heading 'org-mode)))
+
 (define-key my-keys-minor-mode-map "\C-a" 'smarter-move-beginning-of-line)
 (define-key my-keys-minor-mode-map (kbd "C-x C-n") 'other-window)
 (define-key my-keys-minor-mode-map (kbd "C-x C-t") 'switch-to-other-buffer)
@@ -327,68 +343,30 @@ then open a new line"
 (define-key my-keys-minor-mode-map (kbd "<f8>") 'find-file)
 (define-key my-keys-minor-mode-map (kbd "<f7>") 'sudo-edit)
 
-;; in comint, up/down cycles through input history
-(define-key my-comint-minor-mode-map "\C-p" 'comint-previous-input)
-(define-key my-comint-minor-mode-map "\C-t" 'comint-next-input)
-
-;; custom bindings for org mode
-(define-key my-org-minor-mode-map "\M-c" 'outline-previous-visible-heading)
-(define-key my-org-minor-mode-map "\M-t" 'outline-next-visible-heading)
-(define-key my-org-minor-mode-map "\C-cd" 'org-deadline)
-(define-key my-org-minor-mode-map "\C-cs" 'org-schedule)
-(define-key my-org-minor-mode-map "\C-ca" 'org-agenda)
-
-;; custom bindings for slime repl
-(define-key my-slime-repl-minor-mode-map "\C-p" 'slime-repl-previous-input)
-(define-key my-slime-repl-minor-mode-map "\C-t" 'slime-repl-next-input)
-
-(define-minor-mode my-keys-minor-mode
-  "A minor mode so that my key settings always override major modes."
-  t " my-keys" 'my-keys-minor-mode-map)
-
-(define-minor-mode my-comint-minor-mode
-  "A minor mode for custom bindings specific to comint mode."
-  nil " my-comint" 'my-comint-minor-mode-map)
-
-(define-minor-mode my-org-minor-mode
-  "A minor mode for custom bindings specific to org mode."
-  nil " my-org" 'my-org-minor-mode-map)
-
-(define-minor-mode my-slime-repl-minor-mode
-  "A minor mode for custom bindings specific to slime-repl mode."
-  nil " my-slime-repl" 'my-slime-repl-minor-mode-map)
-
 ;; ------> mode hooks
-;; prevent dired from opening up many buffers
-
 (add-hook 'scheme-mode-hook
           '(lambda ()
              (define-key scheme-mode-map (kbd "<f12>") 'scheme-eval-last-and-run)))
 
 (add-hook 'dired-mode-hook
           '(lambda ()
-             (define-key dired-mode-map (kbd "<return>")
+             (define-key dired-mode-map (kbd "<return>") ; prevent dired from opening up many buffers
                'dired-find-alternate-file)
              (define-key dired-mode-map "t" 'dired-next-line)
              (define-key dired-mode-map "c" 'dired-previous-line)
              (define-key dired-mode-map (kbd "<tab>") 'dired-dotfiles-toggle)))
 
-;; html mode: switch to jinja2 mode and bind key for tag insertion
 (setq html-mode-hook
       '(lambda ()
          (jinja2-mode)
          (define-key jinja2-mode-map (kbd "<f9>") 'tag-word-or-region)))
 
-;; had to use another minor mode to override my-keys..
-(add-hook 'comint-mode-hook '(lambda ()
-                               (my-comint-minor-mode)))
-
-(add-hook 'slime-repl-mode-hook '(lambda ()
-                               (my-slime-repl-minor-mode)))
-
 (add-hook 'org-mode-hook '(lambda ()
-                               (my-org-minor-mode)
-                               (define-key org-mode-map (kbd "C-,") nil)))
+                               ;; (my-org-minor-mode)
+                               (define-key org-mode-map (kbd "C-,") nil)
+                               (define-key org-mode-map "\C-cd" 'org-deadline)
+                               (define-key org-mode-map "\C-cs" 'org-schedule)
+                               (define-key org-mode-map "\C-ca" 'org-agenda)))
 
 (add-hook 'org-agenda-mode-hook '(lambda ()
                             (define-key org-agenda-mode-map (kbd "t") 'org-agenda-next-line)
@@ -458,6 +436,7 @@ then open a new line"
 (setq compilation-scroll-output t) ;; scroll to the end of compilation buffer
 (setq erc-hide-list '("JOIN" "PART" "QUIT")) ;; hide join/quit messages in IRC
 
+(show-paren-mode t)
 ;; disable back-ups
 ;; (setq make-backup-files nil)
 
