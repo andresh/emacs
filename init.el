@@ -30,6 +30,8 @@
 (sp-local-pair 'lisp-mode "`" nil :actions nil)
 (sp-local-pair 'emacs-lisp-mode "'" nil :actions nil)
 (sp-local-pair 'emacs-lisp-mode "`" nil :actions nil)
+(sp-local-pair 'slime-repl-mode "'" nil :actions nil)
+(sp-local-pair 'slime-repl-mode "`" nil :actions nil)
 
 ;; auto-complete
 (require 'auto-complete-config)
@@ -56,17 +58,36 @@
 ;; other
 (autoload 'jinja2-mode "jinja2-mode")
 (require 'expand-region)
+(setq expand-region-fast-keys-enabled nil)
 (require 'control-lock)
 (control-lock-keys)
 (autoload 'forward-to-word "misc" t)
-(require 'my-keys)
+
 
 ;; ------> custom functions
+
+(defmacro call-unless (&key default &rest clauses)
+  "Call DEFAULT unless one of the CLAUSES returns t"
+  `(lambda ()
+     (interactive)
+     (or ,@clauses (call-interactively ,default))))
+
+(defmacro call-if-major-mode (fn &rest modes)
+  "If currently active major mode is listed in MODES then call FN and
+return t"
+  `(when (member major-mode (list ,@modes))
+    (call-interactively ,fn)
+    t))
+
+(defun mark-str-or-pairs ()
+  (interactive)
+  (if (er--point-inside-string-p)
+      (call-interactively 'er/mark-inside-quotes)
+    (call-interactively 'er/mark-inside-pairs)))
 
 (defun switch-to-other-buffer ()
   (interactive)
   (switch-to-buffer (other-buffer)))
-
 
 (defun scheme-eval-last-and-run ()
   (interactive)
@@ -332,7 +353,7 @@ then open a new line"
 ;; use keyboard-translate to make C-d decrease indentation in Python mode
 (keyboard-translate ?\C-d ?\C-?)
 (define-key my-keys-minor-mode-map (kbd "M-d") 'delete-char)
-(define-key my-keys-minor-mode-map (kbd "C-j") 'er/mark-inside-pairs)
+(define-key my-keys-minor-mode-map (kbd "C-j") 'mark-str-or-pairs)
 
 ;; commenting
 (define-key my-keys-minor-mode-map (kbd "<f5>") 'comment-region)
@@ -348,9 +369,13 @@ then open a new line"
           '(lambda ()
              (define-key scheme-mode-map (kbd "<f12>") 'scheme-eval-last-and-run)))
 
+(add-hook 'lisp-mode-hook
+          '(lambda ()
+             (define-key lisp-mode-map (kbd "<f12>") 'slime-compile-and-load-file)))
+
 (add-hook 'dired-mode-hook
           '(lambda ()
-             (define-key dired-mode-map (kbd "<return>") ; prevent dired from opening up many buffers
+             (define-key dired-mode-map (kbd "<return>")
                'dired-find-alternate-file)
              (define-key dired-mode-map "t" 'dired-next-line)
              (define-key dired-mode-map "c" 'dired-previous-line)
