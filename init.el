@@ -1,6 +1,32 @@
 
-;; ------> add load paths: /lisp and its subdirs
-(let ((load-base "~/.emacs.d/lisp"))
+;; ------> place ui-based customizations to a separate file
+(setq custom-file "~/.emacs.d/lisp/custom.el")
+(load custom-file 'noerror)
+
+;; ------> ensure that required packages are installed
+(require 'package)
+
+(add-to-list 'package-archives
+             '("melpa" . "http://melpa.milkbox.net/packages/") t)
+
+(add-to-list 'package-archives
+             '("marmalade" . "http://marmalade-repo.org/packages/") t)
+
+(package-initialize)
+
+(when (not package-archive-contents)
+  (package-refresh-contents))
+
+(defvar required-packages
+  '(jedi jinja2-mode smartparens expand-region)
+  "Packages which should be installed upon launch")
+
+(dolist (p required-packages)
+  (when (not (package-installed-p p))
+    (package-install p)))
+
+;; ------> add load paths
+(let ((load-base "~/.emacs.d/lisp/"))
   (mapcar (lambda (x)
             (add-to-list 'load-path x))
           (cons load-base (append
@@ -9,11 +35,11 @@
 ;; ------> library imports and configuration
 
 ;; slime
-(setq inferior-lisp-program "/usr/bin/sbcl") ; your Lisp system
-(setq common-lisp-hyperspec-root "file:///usr/share/doc/hyperspec/")
-(setq slime-backend "~/.emacs.d/lisp/slime-2013-12-09/swank-loader.lisp")
-(require 'slime)
-(slime-setup '(slime-fancy slime-autodoc slime-asdf slime-banner slime-indentation))
+;;(setq inferior-lisp-program "/usr/bin/sbcl") ; your Lisp system
+;;(setq common-lisp-hyperspec-root "file:///usr/share/doc/hyperspec/")
+;;(setq slime-backend "~/.emacs.d/lisp/slime-2013-12-09/swank-loader.lisp")
+;;(require 'slime)
+;;(slime-setup '(slime-fancy slime-autodoc slime-asdf slime-banner slime-indentation))
 
 ;; quack
 ;; (require 'quack)
@@ -566,23 +592,3 @@ then open a new line"
 				  'fullboth)))))
 
 (global-set-key [f11] 'toggle-fullscreen)
-
-
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 105 :width normal :foundry "unknown" :family "DejaVu Sans Mono"))))
- '(font-lock-comment-face ((((class color) (min-colors 88) (background light)) (:foreground "dark green" :slant italic))))
- '(font-lock-type-face ((((class color) (min-colors 88) (background light)) (:foreground "blue"))))
- '(font-lock-variable-name-face ((((class color) (min-colors 88) (background light)) (:foreground "darkgoldenrod"))))
- '(region ((((class color) (min-colors 88) (background light)) (:background "light grey")))))
-(put 'narrow-to-region 'disabled nil)
-(put 'narrow-to-page 'disabled nil)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(line-spacing 1))

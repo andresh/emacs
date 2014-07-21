@@ -3,3 +3,5 @@
 \#*#
 tramp
 bookmarks
+elpa/*
+.python-environments/*
