@@ -18,7 +18,7 @@
   (package-refresh-contents))
 
 (defvar required-packages
-  '(jedi jinja2-mode smartparens expand-region)
+  '(jedi jinja2-mode smartparens expand-region fsharp-mode)
   "Packages which should be installed upon launch")
 
 (dolist (p required-packages)
@@ -91,6 +91,11 @@
 
 
 ;; ------> custom functions
+(defun fsharp-compile-and-run ()
+  (interactive)
+  (let ((name (buffer-file-name)))
+    (if (string-match "^\\(.*\\)\\.\\(fs\\|fsi\\)$" name)
+        (compilation-start (concat "mono " (match-string 1 name) ".exe")))))
 
 (defmacro call-unless (&key default &rest clauses)
   "Call DEFAULT unless one of the CLAUSES returns t"
@@ -391,6 +396,10 @@ then open a new line"
 (define-key my-keys-minor-mode-map (kbd "<f7>") 'sudo-edit)
 
 ;; ------> mode hooks
+(add-hook 'fsharp-mode-hook
+          '(lambda ()
+             (define-key fsharp-mode-map (kbd "<f12>") 'fsharp-compile-and-run)))
+
 (add-hook 'scheme-mode-hook
           '(lambda ()
              (define-key scheme-mode-map (kbd "<f12>") 'scheme-eval-last-and-run)))
