@@ -18,7 +18,7 @@
   (package-refresh-contents))
 
 (defvar required-packages
-  '(jedi jinja2-mode smartparens expand-region fsharp-mode)
+  '(jedi jinja2-mode smartparens expand-region fsharp-mode git-timemachine)
   "Packages which should be installed upon launch")
 
 (dolist (p required-packages)
@@ -91,11 +91,14 @@
 
 
 ;; ------> custom functions
+
 (defun fsharp-compile-and-run ()
   (interactive)
   (let ((name (buffer-file-name)))
-    (if (string-match "^\\(.*\\)\\.\\(fs\\|fsi\\)$" name)
-        (compilation-start (concat "mono " (match-string 1 name) ".exe")))))
+    (cond ((string-match "^\\(.*\\)\\.fsi$" name) (compilation-start (concat "mono " (match-string 1 name) ".exe")))
+          ((string-match "^\\(.*\\)/[^/]+\\.fs$" name)
+           (let ((default-directory (concat (match-string 1 name) "/bin/Debug/")))
+             (compilation-start (concat "mono " default-directory (car (file-expand-wildcards "*.exe")))))))))
 
 (defmacro call-unless (&key default &rest clauses)
   "Call DEFAULT unless one of the CLAUSES returns t"
@@ -548,6 +551,11 @@ then open a new line"
 (delete-selection-mode 1)
 
 ;;nicer buffer switching
+;; (setq ido-enable-flex-matching t)
+;; (setq ido-everywhere t)
+;; (ido-mode 1)
+;; (setq ido-create-new-buffer 'always)
+
 (iswitchb-mode t)
 ;; (add-to-list 'iswitchb-buffer-ignore "^\\*scratch")
 ;; (add-to-list 'iswitchb-buffer-ignore "^\\*Messages")
